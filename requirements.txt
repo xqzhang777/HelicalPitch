@@ -1,0 +1,10 @@
+gemmi
+joblib
+mrcfile
+numpy
+pandas
+pillow
+plotly
+requests
+shiny
+shinywidgets
