@@ -264,31 +264,12 @@ def get_class2d_params_from_file(params_file, cryosparc_pass_through_file=None):
 
 
 def star_to_dataframe(starFile):
-    import pandas as pd
-    from gemmi import cif
-
-    star = cif.read_file(starFile)
-    if len(star) == 2:
-        optics = pd.DataFrame()
-        for item in star[0]:
-            for tag in item.loop.tags:
-                value = star[0].find_loop(tag)
-                optics[tag.strip("_")] = np.array(value)
-    else:
-        optics = None
-
-    data = pd.DataFrame()
-    for item in star[-1]:
-        for tag in item.loop.tags:
-            value = star[-1].find_loop(tag)
-            tag = tag.strip("_")
-            data[tag] = np.array(value)
-
-    if optics is not None:
-        data.attrs["optics"] = optics
-
+    import starfile
+    d = starfile.read(starFile, always_dict=True)
+    assert "optics" in d and "particles" in d, f"ERROR: {starFile} has {' '.join(d.keys())} but optics and particles are expected"
+    data = d["particles"]
+    data.attrs["optics"] = d["optics"]
     data.attrs["starFile"] = starFile
-
     return data
 
 
@@ -378,45 +359,6 @@ def cs_to_dataframe(cs_file, cs_pass_through_file):
     if "alignments2D/pose" in data:
         ret["rlnAnglePsi"] = -np.rad2deg(data["alignments2D/pose"]).round(2)
     return ret
-
-
-def dataframe2star(data, starFile):
-    if hasattr(starFile, "read") and callable(starFile.read):
-        fp = starFile
-    else:
-        fp = open(starFile, "wt")
-
-    try:
-        optics = data.attrs["optics"]
-        if len(optics) > 0:
-            fp.write("\n# version 30001\n")
-            fp.write("\ndata_optics\n\nloop_ \n")
-            keys = [k for k in optics.columns if k.startswith("rln")]
-            for ki, k in enumerate(keys):
-                fp.write("_%s #%d \n" % (k, ki + 1))
-            lines = optics[keys[0]].astype(str)
-            for k in keys[1:]:
-                if optics[k].dtype == np.float64:
-                    lines += "\t" + optics[k].round(6).astype(str)
-                else:
-                    lines += "\t" + optics[k].astype(str)
-            fp.write("\n".join(lines))
-            fp.write("\n\n")
-    except:
-        pass
-
-    fp.write(f"\ndata_particles\n\nloop_ \n")
-    keys = [k for k in data.columns if k.startswith("rln")]
-    for ki, k in enumerate(keys):
-        fp.write("_%s #%d \n" % (k, ki + 1))
-    lines = data[keys[0]].astype(str)
-    for k in keys[1:]:
-        if data[k].dtype == np.float64:
-            lines += "\t" + data[k].round(6).astype(str)
-        else:
-            lines += "\t" + data[k].astype(str)
-    fp.write("\n".join(lines))
-    fp.write("\n")
 
 
 def download_file_from_url(url):

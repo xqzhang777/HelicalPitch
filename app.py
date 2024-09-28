@@ -297,13 +297,11 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                         [h.index for hi, h in retained_helices_by_length()]
                     )
                     params_to_save = params().iloc[indices]
-                    import io
-
-                    output = io.StringIO()
-                    compute.dataframe2star(params_to_save, output)
-                    output.seek(0)
-                    yield output.read()
-
+                    
+                    import starfile
+                    d = dict(optics=params_to_save.attrs['optics'], particles=params_to_save)
+                    yield starfile.to_string(d)
+                    
                 return download_ui
             else:
                 return None
