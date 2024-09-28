@@ -31,6 +31,7 @@ compute.google_analytics(id="G-998MGRETTF")
 ui.tags.style(
     """
     * { font-size: 10pt; padding:0; border: 0; margin: 0; }
+    aside {--_padding-icon: 10px;}
     """
 )
 urls = {
@@ -41,54 +42,56 @@ urls = {
 }
 url_key = "empiar-10940_job010"
 
-with ui.sidebar(width="33vw"):
-    ui.input_radio_buttons(
-        "input_mode_params",
-        "How to obtain the Class2D parameter file:",
-        choices=["upload", "url"],
-        selected="url",
-        inline=True,
-    )
-    with ui.panel_conditional("input.input_mode_params === 'upload'"):
-        ui.input_file(
-            "upload_params",
-            "Upload the class2d parameters in a RELION star or cryoSPARC cs file",
-            accept=[".star", ".cs"],
-            placeholder="star or cs file",
+with ui.sidebar(width="33vw", style="display: flex; flex-direction: column; height: 100%;"):
+    with ui.div(id="input_files", style="flex-shrink: 0;"):
+        ui.input_radio_buttons(
+            "input_mode_params",
+            "How to obtain the Class2D parameter file:",
+            choices=["upload", "url"],
+            selected="url",
+            inline=True,
+        )
+        with ui.panel_conditional("input.input_mode_params === 'upload'"):
+            ui.input_file(
+                "upload_params",
+                "Upload the class2d parameters in a RELION star or cryoSPARC cs file",
+                accept=[".star", ".cs"],
+                placeholder="star or cs file",
+            )
+
+        with ui.panel_conditional("input.input_mode_params === 'url'"):
+            ui.input_text(
+                "url_params",
+                "Download URL for a RELION star or cryoSPARC cs file",
+                value=urls[url_key][0],
+            )
+
+        ui.input_radio_buttons(
+            "input_mode_classes",
+            "How to obtain the class average images:",
+            choices=["upload", "url"],
+            selected="url",
+            inline=True,
         )
 
-    with ui.panel_conditional("input.input_mode_params === 'url'"):
-        ui.input_text(
-            "url_params",
-            "Download URL for a RELION star or cryoSPARC cs file",
-            value=urls[url_key][0],
-        )
+        with ui.panel_conditional("input.input_mode_classes === 'upload'"):
+            ui.input_file(
+                "upload_classes",
+                "Upload the class averages in MRC format (.mrcs, .mrc)",
+                accept=[".mrcs", ".mrc"],
+                placeholder="mrcs or mrc file",
+            )
 
-    ui.input_radio_buttons(
-        "input_mode_classes",
-        "How to obtain the class average images:",
-        choices=["upload", "url"],
-        selected="url",
-        inline=True,
-    )
-    with ui.panel_conditional("input.input_mode_classes === 'upload'"):
-        ui.input_file(
-            "upload_classes",
-            "Upload the class averages in MRC format (.mrcs, .mrc)",
-            accept=[".mrcs", ".mrc"],
-            placeholder="mrcs or mrc file",
-        )
+        with ui.panel_conditional("input.input_mode_classes === 'url'"):
+            ui.input_text(
+                "url_classes",
+                "Download URL for a RELION or cryoSPARC Class2D output mrc(s) file",
+                value=urls[url_key][1],
+            )
 
-    with ui.panel_conditional("input.input_mode_classes === 'url'"):
-        ui.input_text(
-            "url_classes",
-            "Download URL for a RELION or cryoSPARC Class2D output mrc(s) file",
-            value=urls[url_key][1],
-        )
+        ui.input_task_button("run", label="Run", style="width: 100%;")
 
-    ui.input_task_button("run", label="Run")
-
-    with ui.div(style="max-height: 50vh; overflow-y: auto;"):
+    with ui.div(id="class-selection", style="flex-grow: 1; overflow-y: auto;"):
         selected_image_indices = compute.image_select(
             id="select_classes",
             label="Select classe(s):",
@@ -110,7 +113,7 @@ with ui.sidebar(width="33vw"):
 
 
 title = "HelicalPitch: determine helical pitch/twist using 2D Classification info"
-ui.h1(title)
+ui.h1(title, style="font-weight: bold;")
 
 with ui.layout_columns(col_widths=(5, 7, 12)):
     with ui.card():
@@ -306,8 +309,8 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
             else:
                 return None
 
-    ui.markdown(
-        "*Developed by the [Jiang Lab@Purdue University](https://jiang.bio.purdue.edu/HelicalPitch). Report problems to [HelicalPitch@GitHub](https://github.com/jianglab/HelicalPitch/issues)*"
+    ui.HTML(
+        "<i><p>Developed by the <a href='https://jiang.bio.purdue.edu/HelicalPitch' target='_blank'>Jiang Lab</a>. Report issues to <a href='https://github.com/jianglab/HelicalPitch/issues' target='_blank'>HelicalPitch@GitHub</a>.</p></i>"
     )
 
 
