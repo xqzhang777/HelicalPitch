@@ -4,7 +4,9 @@ from shiny import reactive, req
 from shiny.express import input, ui, render
 from shinywidgets import render_plotly
 
-import compute
+import helicon
+
+from . import compute
 
 params = reactive.value(None)
 
@@ -27,7 +29,7 @@ pair_distances = reactive.value([])
 
 
 ui.head_content(ui.tags.title("HelicalPitch"))
-compute.google_analytics(id="G-998MGRETTF")
+helicon.shiny.google_analytics(id="G-998MGRETTF")
 ui.tags.style(
     """
     * { font-size: 10pt; padding:0; border: 0; margin: 0; }
@@ -92,7 +94,7 @@ with ui.sidebar(width="33vw", style="display: flex; flex-direction: column; heig
         ui.input_task_button("run", label="Run", style="width: 100%;")
 
     with ui.div(id="class-selection", style="flex-grow: 1; overflow-y: auto;"):
-        selected_image_indices = compute.image_select(
+        selected_image_indices = helicon.shiny.image_select(
             id="select_classes",
             label="Select classe(s):",
             images=displayed_class_images,
@@ -118,7 +120,7 @@ ui.h1(title, style="font-weight: bold;")
 with ui.layout_columns(col_widths=(5, 7, 12)):
     with ui.card():
         with ui.div(style="max-height: 40vh; overflow-y: auto;"):
-            compute.image_select(
+            helicon.shiny.image_select(
                 id="display_selected_image",
                 label="Selected classe(s):",
                 images=selected_images,
@@ -563,7 +565,7 @@ connection_made = reactive.Value(False)
 @reactive.effect
 @reactive.event(lambda: not connection_made())
 def apply_initial_params_from_browser_url():
-    d = compute.get_client_url_query_params(input=input, keep_list=True)
+    d = helicon.shiny.get_client_url_query_params(input=input, keep_list=True)
     for k, v in d.items():
         if k in float_vars:
             v = list(map(float, v))
@@ -615,5 +617,5 @@ def update_browser_url():
         d = {k: d[k] for k in sorted(d.keys())}
     else:
         d = {}
-    script = compute.set_client_url_query_params(query_params=d)
+    script = helicon.shiny.set_client_url_query_params(query_params=d)
     return script
