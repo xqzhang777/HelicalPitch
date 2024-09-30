@@ -1,9 +1,9 @@
-
 import numpy as np
 import pandas as pd
 import os, pathlib
 
 from joblib import Memory
+
 username = os.getenv("USER")
 memory = Memory(location=f"/tmp/{username}_joblib_cache", verbose=0)
 
@@ -24,7 +24,9 @@ def compute_pair_distances(helices, lengths=None, target_total_count=-1):
         for ci in class_ids:
             mask = segments_all_classes["rlnClassNumber"] == ci
             segments = segments_all_classes.loc[mask, :]
-            pos_along_helix = segments["rlnHelicalTrackLengthAngst"].values.astype(float)
+            pos_along_helix = segments["rlnHelicalTrackLengthAngst"].values.astype(
+                float
+            )
             psi = segments["rlnAnglePsi"].values.astype(float)
 
             distances = np.abs(pos_along_helix[:, None] - pos_along_helix)
@@ -238,8 +240,11 @@ def get_class2d_params_from_file(params_file, cryosparc_pass_through_file=None):
 
 def star_to_dataframe(starFile):
     import starfile
+
     d = starfile.read(starFile, always_dict=True)
-    assert "optics" in d and "particles" in d, f"ERROR: {starFile} has {' '.join(d.keys())} but optics and particles are expected"
+    assert (
+        "optics" in d and "particles" in d
+    ), f"ERROR: {starFile} has {' '.join(d.keys())} but optics and particles are expected"
     data = d["particles"]
     data.attrs["optics"] = d["optics"]
     data.attrs["starFile"] = starFile

@@ -44,7 +44,9 @@ urls = {
 }
 url_key = "empiar-10940_job010"
 
-with ui.sidebar(width="33vw", style="display: flex; flex-direction: column; height: 100%;"):
+with ui.sidebar(
+    width="33vw", style="display: flex; flex-direction: column; height: 100%;"
+):
     with ui.div(id="input_files", style="flex-shrink: 0;"):
         ui.input_radio_buttons(
             "input_mode_params",
@@ -302,11 +304,14 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                         [h.index for hi, h in retained_helices_by_length()]
                     )
                     params_to_save = params().iloc[indices]
-                    
+
                     import starfile
-                    d = dict(optics=params_to_save.attrs['optics'], particles=params_to_save)
+
+                    d = dict(
+                        optics=params_to_save.attrs["optics"], particles=params_to_save
+                    )
                     yield starfile.to_string(d)
-                    
+
                 return download_ui
             else:
                 return None
@@ -455,7 +460,9 @@ def get_params_from_url():
         )
         ui.modal_show(m)
 
+
 selected_helices_min_len = reactive.value(([[], [], 0], 0))
+
 
 @reactive.effect
 @reactive.event(selected_image_indices, params)
