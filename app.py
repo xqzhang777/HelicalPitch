@@ -30,6 +30,7 @@ pair_distances = reactive.value([])
 
 ui.head_content(ui.tags.title("HelicalPitch"))
 helicon.shiny.google_analytics(id="G-998MGRETTF")
+helicon.shiny.set_input_text_numeric_update_on_change()
 ui.tags.style(
     """
     * { font-size: 10pt; padding:0; border: 0; margin: 0; }
@@ -330,7 +331,8 @@ def get_class2d_from_upload():
     try:
         data, apix = compute.get_class2d_from_file(class_file)
         nx = data.shape[-1]
-    except:
+    except Exception as e:
+        print(e)
         data, apix = None, 0
         nx = 0
         m = ui.modal(
@@ -353,7 +355,8 @@ def get_class2d_from_url():
     try:
         data, apix = compute.get_class2d_from_url(url)
         nx = data.shape[-1]
-    except:
+    except Exception as e:
+        print(e)
         data, apix = None, 0
         nx = 0
         m = ui.modal(
@@ -380,8 +383,8 @@ def get_displayed_class_images():
     try:
         df = params()
         abundance.set(compute.get_class_abundance(df, n))
-    except Exception:
-        print(Exception)
+    except Exception as e:
+        print(e)
         m = ui.modal(
             f"Failed to get class abundance from the provided Class2D parameter and  image files. Make sure that the two files are for the same Class2D job",
             title="Information error",
@@ -426,7 +429,8 @@ def get_params_from_upload():
         tmp_params = compute.get_class2d_params_from_file(
             param_file, cs_pass_through_file
         )
-    except:
+    except Exception as e:
+        print(e)
         tmp_params = None
     params.set(tmp_params)
 
@@ -447,7 +451,8 @@ def get_params_from_url():
     url = input.url_params()
     try:
         tmp_params = compute.get_class2d_params_from_url(url)
-    except:
+    except Exception as e:
+        print(e)
         tmp_params = None
     params.set(tmp_params)
 
@@ -507,7 +512,7 @@ def auto_set_filament_min_len():
 
 
 @reactive.effect
-@reactive.event(input.min_len)
+@reactive.event(input.min_len_changed)
 def update_selected_helices_min_len():
     selected_helices_min_len.set((selected_helices(), input.min_len()))
 
