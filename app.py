@@ -30,6 +30,7 @@ pair_distances = reactive.value([])
 
 ui.head_content(ui.tags.title("HelicalPitch"))
 helicon.shiny.google_analytics(id="G-998MGRETTF")
+helicon.shiny.setup_ajdustable_sidebar()
 helicon.shiny.set_input_text_numeric_update_on_change()
 ui.tags.style(
     """
