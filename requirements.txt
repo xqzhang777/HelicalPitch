@@ -1,4 +1,4 @@
-git+https://github.com/jianglab/helicon.git@v2024.09
+git+https://github.com/jianglab/helicon.git@036b97cd6d0018e2a03f63615a68f7a1de6e1f84
 joblib
 mrcfile
 numpy

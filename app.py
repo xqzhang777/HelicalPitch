@@ -19,7 +19,6 @@ displayed_class_images = reactive.value([])
 displayed_class_labels = reactive.value([])
 
 initial_selected_image_indices = reactive.value([0])
-selected_image_indices = reactive.value([])
 selected_images = reactive.value([])
 selected_image_labels = reactive.value([])
 
@@ -98,7 +97,7 @@ with ui.sidebar(
         ui.input_task_button("run", label="Run", style="width: 100%;")
 
     with ui.div(id="class-selection", style="flex-grow: 1; overflow-y: auto;"):
-        selected_image_indices = helicon.shiny.image_select(
+        helicon.shiny.image_select(
             id="select_classes",
             label="Select classe(s):",
             images=displayed_class_images,
@@ -108,13 +107,13 @@ with ui.sidebar(
         )
 
         @reactive.effect
-        @reactive.event(selected_image_indices)
+        @reactive.event(input.select_classes)
         def update_selected_images():
             selected_images.set(
-                [displayed_class_images()[i] for i in selected_image_indices()]
+                [displayed_class_images()[i] for i in input.select_classes()]
             )
             selected_image_labels.set(
-                [displayed_class_labels()[i] for i in selected_image_indices()]
+                [displayed_class_labels()[i] for i in input.select_classes()]
             )
 
 
@@ -130,7 +129,7 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                 images=selected_images,
                 image_labels=selected_image_labels,
                 image_size=image_size,
-                disable_selection=True,
+                enable_selection=False,
             )
 
         with ui.layout_columns(col_widths=[12, 12], style="align-items: flex-end;"):
@@ -143,7 +142,7 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                 helices, lengths, count = selected_helices()
                 data = lengths
                 class_indices = [
-                    str(displayed_class_ids()[i] + 1) for i in selected_image_indices()
+                    str(displayed_class_ids()[i] + 1) for i in input.select_classes()
                 ]
                 title = f"Filament Lengths: Class {' '.join(class_indices)}<br><i>{len(helices):,} filaments | {count:,} segments</i>"
                 xlabel = "Filament Legnth (Å)"
@@ -261,7 +260,7 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                 class_indices = []
             class_indices = [
                 str(displayed_class_ids()[i] + 1)
-                for i in selected_image_indices()
+                for i in input.select_classes()
                 if (displayed_class_ids()[i] + 1) in class_indices
             ]
             rise = input.rise()
@@ -471,12 +470,12 @@ selected_helices_min_len = reactive.value(([[], [], 0], 0))
 
 
 @reactive.effect
-@reactive.event(selected_image_indices, params)
+@reactive.event(input.select_classes, params)
 def get_selected_helices():
     req(params() is not None)
     req(image_size())
     req(len(abundance()))
-    class_indices = [displayed_class_ids()[i] for i in selected_image_indices()]
+    class_indices = [displayed_class_ids()[i] for i in input.select_classes()]
     helices = compute.select_classes(params=params(), class_indices=class_indices)
     if len(helices):
         class_indices2 = (
@@ -525,7 +524,7 @@ def select_helices_by_length():
     selected_image_indices_previous, min_len_previous = previous
     (helices, filement_lengths, _), min_len = selected_helices_min_len()
     req(
-        set(selected_image_indices_previous) != set(selected_image_indices())
+        set(selected_image_indices_previous) != set(input.select_classes())
         or min_len_previous != min_len
     )
     if len(helices) == 0:
@@ -540,7 +539,7 @@ def select_helices_by_length():
             max_len=input.max_len(),
         )
         retained_helices_by_length.set(helices_retained)
-    select_helices_by_length.previous = (selected_image_indices(), min_len)
+    select_helices_by_length.previous = (input.select_classes(), min_len)
 
 
 @reactive.effect
@@ -570,7 +569,7 @@ str_vars = dict(
 )
 all_input_vars = list(float_vars.keys()) + list(int_vars.keys()) + list(str_vars.keys())
 reactive_vars_in = dict(select=(initial_selected_image_indices, int))
-reactive_vars_out = dict(selected_image_indices=(selected_image_indices, [0], "select"))
+reactive_vars_out = dict(selected_image_indices=(input.select_classes, [0], "select"))
 
 connection_made = reactive.Value(False)
 
