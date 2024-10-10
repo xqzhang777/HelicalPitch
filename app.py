@@ -123,14 +123,16 @@ ui.h1(title, style="font-weight: bold;")
 with ui.layout_columns(col_widths=(5, 7, 12)):
     with ui.card():
         with ui.div(style="max-height: 40vh; overflow-y: auto;"):
-            helicon.shiny.image_select(
-                id="display_selected_image",
-                label="Selected classe(s):",
-                images=selected_images,
-                image_labels=selected_image_labels,
-                image_size=image_size,
-                enable_selection=False,
-            )
+
+            @render.ui
+            @reactive.event(selected_images)
+            def display_selected_images():
+                return helicon.shiny.image_gallery(
+                    id="display_selected_image",
+                    label="Selected classe(s):",
+                    images=selected_images,
+                    image_labels=selected_image_labels,
+                )
 
         with ui.layout_columns(col_widths=[12, 12], style="align-items: flex-end;"):
 
