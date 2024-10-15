@@ -201,34 +201,22 @@ def get_class2d_from_file(classFile):
 
 
 @memory.cache
-def get_class2d_params_from_url(url, url_cs_pass_through=None):
+def get_class2d_params_from_url(url):
     url_final = get_direct_url(url)  # convert cloud drive indirect url to direct url
     fileobj = download_file_from_url(url_final)
     if fileobj is None:
         raise ValueError(
             f"ERROR: {url} could not be downloaded. If this url points to a cloud drive file, make sure the link is a direct download link instead of a link for preview"
         )
-    if url_cs_pass_through is None:
-        data = get_class2d_params_from_file(fileobj.name)
-        return data
-    url_final_cs_pass_through = get_direct_url(
-        url_cs_pass_through
-    )  # convert cloud drive indirect url to direct url
-    fileobj_cs_pass_through = download_file_from_url(url_final_cs_pass_through)
-    if fileobj_cs_pass_through is None:
-        raise ValueError(
-            f"ERROR: {url_cs_pass_through} could not be downloaded. If this url points to a cloud drive file, make sure the link is a direct download link instead of a link for preview"
-        )
-    data = get_class2d_params_from_file(fileobj.name, fileobj_cs_pass_through.name)
+    data = get_class2d_params_from_file(fileobj.name)
     return data
 
 
-def get_class2d_params_from_file(params_file, cryosparc_pass_through_file=None):
+def get_class2d_params_from_file(params_file):
     if params_file.endswith(".star"):
         params = star_to_dataframe(params_file)
     elif params_file.endswith(".cs"):
-        assert cryosparc_pass_through_file is not None
-        params = cs_to_dataframe(params_file, cryosparc_pass_through_file)
+        params = cs_to_dataframe(params_file)
     required_attrs = np.unique(
         "rlnImageName rlnHelicalTubeID rlnHelicalTrackLengthAngst rlnClassNumber rlnAnglePsi".split()
     )
@@ -251,91 +239,47 @@ def star_to_dataframe(starFile):
     return data
 
 
-def cs_to_dataframe(cs_file, cs_pass_through_file):
+def cs_to_dataframe(cs_file):
     cs = np.load(cs_file)
-    df_cs = pd.DataFrame.from_records(cs.tolist(), columns=cs.dtype.names)
-    cs_passthrough = np.load(cs_pass_through_file)
-    df_cs_passthrough = pd.DataFrame.from_records(
-        cs_passthrough.tolist(), columns=cs_passthrough.dtype.names
-    )
-    data = pd.concat([df_cs, df_cs_passthrough], axis=1)
-    data = data.loc[:, ~data.columns.duplicated()]
-    # rlnImageName rlnHelicalTubeID rlnHelicalTrackLengthAngst rlnCoordinateX rlnCoordinateY rlnClassNumber rlnAnglePsi
+    data = pd.DataFrame.from_records(cs.tolist(), columns=cs.dtype.names)
+    required_attrs = "blob/idx blob/path filament/filament_uid filament/position_A alignments2D/class alignments2D/pose".split()
+    missing_attrs = [attr for attr in required_attrs if attr not in data]
+    if missing_attrs:
+        msg = f"ERROR: required attrs '{', '.join(missing_attrs)}' are not included in {cs_file}"
+        msg += "\nIf the particles in this CryoSPARC job were imported from a RELION star file, you can use the following command to create a star file and load that star file to HelicalPitch:\n"
+        msg += "helicon images2star <this cs file> <output star file> --copyParm <original star file>"
+        raise ValueError(msg)
     ret = pd.DataFrame()
-    if "blob/idx" in data and "blob/path" in data:
-        ret["rlnImageName"] = (
-            (data["blob/idx"].astype(int) + 1).map("{:06d}".format)
-            + "@"
-            + data["blob/path"].str.decode("utf-8")
-        )
-    if "blob/psize_A" in data:
-        ret["rlnImagePixelSize"] = data["blob/psize_A"]
-        ret["blob/psize_A"] = data["blob/psize_A"]
+    ret["rlnImageName"] = (
+        (data["blob/idx"].astype(int) + 1).map("{:06d}".format)
+        + "@"
+        + data["blob/path"].str.decode("utf-8")
+    )
     if "micrograph_blob/path" in data:
         ret["rlnMicrographName"] = data["micrograph_blob/path"]
-    if "micrograph_blob/psize_A" in data:
-        ret["rlnMicrographPixelSize"] = data["micrograph_blob/psize_A"]
-        ret["micrograph_blob/psize_A"] = data["micrograph_blob/psize_A"]
-    if "location/micrograph_path" in data:
-        ret["rlnMicrographName"] = data["location/micrograph_path"]
-    if (
-        "location/center_x_frac" in data
-        and "location/center_y_frac" in data
-        and "location/micrograph_shape" in data
-    ):
-        locations = pd.DataFrame(data["location/micrograph_shape"].tolist())
-        my = locations.iloc[:, 0]
-        mx = locations.iloc[:, 1]
-        ret["rlnCoordinateX"] = (
-            (data["location/center_x_frac"] * mx).astype(float).round(2)
-        )
-        ret["rlnCoordinateY"] = (
-            (data["location/center_y_frac"] * my).astype(float).round(2)
-        )
-    if "filament/filament_uid" in data:
-        if "blob/path" in data:
-            if data["filament/filament_uid"].min() > 1000:
-                micrographs = data.groupby(["blob/path"])
-                for _, m in micrographs:
-                    mapping = {
-                        v: i + 1
-                        for i, v in enumerate(
-                            sorted(m["filament/filament_uid"].unique())
-                        )
-                    }
-                    ret.loc[m.index, "rlnHelicalTubeID"] = m[
-                        "filament/filament_uid"
-                    ].map(mapping)
-            else:
-                ret.loc[:, "rlnHelicalTubeID"] = data["filament/filament_uid"].astype(
-                    int
-                )
+    else:
+        ret["rlnMicrographName"] = data["blob/path"].str.decode("utf-8")
 
-            if "filament/position_A" in data:
-                filaments = data.groupby(["blob/path", "filament/filament_uid"])
-                for _, f in filaments:
-                    val = f["filament/position_A"].astype(np.float32).values
-                    val -= np.min(val)
-                    ret.loc[f.index, "rlnHelicalTrackLengthAngst"] = val.round(2)
-        else:
+    if data["filament/filament_uid"].min() > 1000:
+        micrographs = data.groupby(["blob/path"])
+        for _, m in micrographs:
             mapping = {
                 v: i + 1
-                for i, v in enumerate(sorted(data["filament/filament_uid"].unique()))
+                for i, v in enumerate(sorted(m["filament/filament_uid"].unique()))
             }
-            ret.loc[:, "rlnHelicalTubeID"] = data["filament/filament_uid"].map(mapping)
-    if "filament/filament_pose" in data:
-        ret.loc[:, "rlnAnglePsi"] = np.round(
-            -np.rad2deg(data["filament/filament_pose"]), 1
-        )
+            ret.loc[m.index, "rlnHelicalTubeID"] = m["filament/filament_uid"].map(
+                mapping
+            )
+    else:
+        ret["rlnHelicalTubeID"] = data["filament/filament_uid"].astype(int)
+
+    ret["rlnHelicalTrackLengthAngst"] = (
+        data["filament/position_A"].astype(np.float32).values.round(2)
+    )
+
     # 2D class assignments
-    if "alignments2D/class" in data:
-        ret["rlnClassNumber"] = data["alignments2D/class"].astype(int) + 1
-    if "alignments2D/shift" in data:
-        shifts = pd.DataFrame(data["alignments2D/shift"].tolist()).round(2)
-        ret["rlnOriginX"] = -shifts.iloc[:, 0]
-        ret["rlnOriginY"] = -shifts.iloc[:, 1]
-    if "alignments2D/pose" in data:
-        ret["rlnAnglePsi"] = -np.rad2deg(data["alignments2D/pose"]).round(2)
+    ret["rlnClassNumber"] = data["alignments2D/class"].astype(int) + 1
+    ret["rlnAnglePsi"] = -np.rad2deg(data["alignments2D/pose"]).round(2)
     return ret
 
 

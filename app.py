@@ -1,3 +1,4 @@
+import pathlib
 import numpy as np
 
 from shiny import reactive, req
@@ -422,23 +423,23 @@ def get_params_from_upload():
     req(input.input_mode_params() == "upload")
     fileinfo = input.upload_params()
     param_file = fileinfo[0]["datapath"]
-    if len(fileinfo) == 2:
-        cs_pass_through_file = fileinfo[1]["datapath"]
-        assert cs_pass_through_file.endswith(".cs")
-    else:
-        cs_pass_through_file = None
+    msg = None
     try:
-        tmp_params = compute.get_class2d_params_from_file(
-            param_file, cs_pass_through_file
-        )
+        tmp_params = compute.get_class2d_params_from_file(param_file)
     except Exception as e:
         print(e)
+        msg = str(e).replace(param_file, fileinfo[0]["name"])
         tmp_params = None
     params.set(tmp_params)
 
     if params() is None:
+        if msg is None:
+            msg = f"failed to parse the upload class2D parameters from {fileinfo[0]['name']}"
+        msg = ui.markdown(
+            msg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br><br>")
+        )
         m = ui.modal(
-            f"failed to parse the upload class2D parameters from {fileinfo[0]['name']}",
+            msg,
             title="File upload error",
             easy_close=True,
             footer=None,
@@ -451,16 +452,23 @@ def get_params_from_upload():
 def get_params_from_url():
     req(input.input_mode_params() == "url")
     url = input.url_params()
+    msg = None
     try:
         tmp_params = compute.get_class2d_params_from_url(url)
     except Exception as e:
         print(e)
+        msg = str(e)
         tmp_params = None
     params.set(tmp_params)
 
     if params() is None:
+        if msg is None:
+            msg = f"failed to download class2D parameters from {input.url_params()}"
+        msg = ui.markdown(
+            msg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br><br>")
+        )
         m = ui.modal(
-            f"failed to download class2D parameters from {input.url_params()}",
+            msg,
             title="File download error",
             easy_close=True,
             footer=None,
