@@ -242,7 +242,7 @@ def star_to_dataframe(starFile):
 def cs_to_dataframe(cs_file):
     cs = np.load(cs_file)
     data = pd.DataFrame.from_records(cs.tolist(), columns=cs.dtype.names)
-    required_attrs = "blob/idx blob/path filament/filament_uid filament/position_A alignments2D/class alignments2D/pose".split()
+    required_attrs = "blob/idx blob/path filament/filament_uid filament/arc_length_A alignments2D/class alignments2D/pose".split()
     missing_attrs = [attr for attr in required_attrs if attr not in data]
     if missing_attrs:
         msg = f"ERROR: required attrs '{', '.join(missing_attrs)}' are not included in {cs_file}"
@@ -274,7 +274,7 @@ def cs_to_dataframe(cs_file):
         ret["rlnHelicalTubeID"] = data["filament/filament_uid"].astype(int)
 
     ret["rlnHelicalTrackLengthAngst"] = (
-        data["filament/position_A"].astype(np.float32).values.round(2)
+        data["filament/arc_length_A"].astype(np.float32).values.round(2)
     )
 
     # 2D class assignments

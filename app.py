@@ -17,6 +17,7 @@ image_size = reactive.value(0)
 
 displayed_class_ids = reactive.value([])
 displayed_class_images = reactive.value([])
+displayed_class_title = reactive.value("Select class(es):")
 displayed_class_labels = reactive.value([])
 
 initial_selected_image_indices = reactive.value([0])
@@ -100,7 +101,7 @@ with ui.sidebar(
     with ui.div(id="class-selection", style="flex-grow: 1; overflow-y: auto;"):
         helicon.shiny.image_select(
             id="select_classes",
-            label="Select classe(s):",
+            label=displayed_class_title,
             images=displayed_class_images,
             image_labels=displayed_class_labels,
             image_size=reactive.value(128),
@@ -130,7 +131,7 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
             def display_selected_images():
                 return helicon.shiny.image_gallery(
                     id="display_selected_image",
-                    label="Selected classe(s):",
+                    label=reactive.value("Selected classe(s):"),
                     images=selected_images,
                     image_labels=selected_image_labels,
                 )
@@ -345,7 +346,7 @@ def get_class2d_from_upload():
             footer=None,
         )
         ui.modal_show(m)
-    data_all.set(data)
+    data_all.set((data, apix))
     image_size.set(nx)
 
 
@@ -369,7 +370,7 @@ def get_class2d_from_url():
             footer=None,
         )
         ui.modal_show(m)
-    data_all.set(data)
+    data_all.set((data, apix))
     image_size.set(nx)
 
 
@@ -378,7 +379,7 @@ def get_class2d_from_url():
 def get_displayed_class_images():
     req(params() is not None)
     req(data_all() is not None)
-    data = data_all()
+    data, apix = data_all()
     n = len(data)
     images = [data[i] for i in range(n)]
     image_size.set(max(images[0].shape))
@@ -413,8 +414,11 @@ def get_displayed_class_images():
     image_labels = [f"{i+1}: {abundance()[i]:,d}" for i in included]
 
     displayed_class_ids.set(included)
-    displayed_class_labels.set(image_labels)
     displayed_class_images.set(images)
+    displayed_class_title.set(
+        f"{len(included)}/{n} classes | {images[0].shape[1]}x{images[0].shape[0]} pixels | {apix} Å/pixel"
+    )
+    displayed_class_labels.set(image_labels)
 
 
 @reactive.effect
