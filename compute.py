@@ -84,6 +84,12 @@ def select_classes(params, class_indices):
     helices = list(particles.groupby(["rlnMicrographName", "rlnHelicalTubeID"]))
     return helices
 
+def select_helices_from_helixID(params, ids):
+    mask = params["helixID"].astype(int).isin(ids)
+    particles = params.loc[mask, :]
+    helices = list(particles.groupby(["rlnMicrographName", "rlnHelicalTubeID"]))
+    return helices
+
 
 def get_class_abundance(params, nClass):
     abundance = np.zeros(nClass, dtype=int)
@@ -200,6 +206,16 @@ def get_class2d_from_file(classFile):
     return data, round(apix, 4)
 
 
+
+def get_class2d_helix_params_from_url(url):
+    df = get_class2d_params_from_url(url)
+    helices = df.groupby(["rlnMicrographName", "rlnHelicalTubeID"])
+    for hi, (_, helix) in enumerate(helices):
+        l = helix["rlnHelicalTrackLengthAngst"].astype(float).max().round()
+        df.loc[helix.index, "length"] = l
+        df.loc[helix.index, "helixID"] = hi + 1   
+    return df
+
 @memory.cache
 def get_class2d_params_from_url(url):
     url_final = get_direct_url(url)  # convert cloud drive indirect url to direct url
@@ -212,11 +228,21 @@ def get_class2d_params_from_url(url):
     return data
 
 
+def get_class2d_helix_params_from_file(params_file):
+    df = get_class2d_params_from_file(params_file)
+    helices = df.groupby(["rlnMicrographName", "rlnHelicalTubeID"])
+    for hi, (_, helix) in enumerate(helices):
+        l = helix["rlnHelicalTrackLengthAngst"].astype(float).max().round()
+        df.loc[helix.index, "length"] = l
+        df.loc[helix.index, "helixID"] = hi + 1   
+    return df
+
 def get_class2d_params_from_file(params_file):
     if params_file.endswith(".star"):
         params = star_to_dataframe(params_file)
     elif params_file.endswith(".cs"):
         params = cs_to_dataframe(params_file)
+    
     required_attrs = np.unique(
         "rlnImageName rlnHelicalTubeID rlnHelicalTrackLengthAngst rlnClassNumber rlnAnglePsi".split()
     )
