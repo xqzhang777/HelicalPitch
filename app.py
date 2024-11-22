@@ -283,7 +283,7 @@ with ui.layout_columns(col_widths=(5, 7, 12)):
                 df = summary_df
                 return render.DataGrid(
                     summary_df,
-                    selection_mode="row",
+                    selection_mode="rows",
                     filters=True,
                     height="30vh",
                     width="100%",
